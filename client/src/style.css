@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans;
+    background-image: 
+      radial-gradient(ellipse at top, #0f2744 0%, #08121f 50%, #030712 100%);
+  }
+}
+
+/* Maritime glow and antique styling */
+.parchment-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(205, 177, 128, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(202, 138, 4, 0.1);
+}
+
+.gold-glow {
+  text-shadow: 0 0 12px rgba(234, 179, 8, 0.6);
+}
+
+.ocean-glow {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(205, 177, 128, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(205, 177, 128, 0.7);
+}
+
+/* --- Cinematic Storm & Pirate Combat Animations --- */
+@keyframes screenShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-4px, 3px) rotate(-1deg); }
+  20%, 40%, 60%, 80% { transform: translate(5px, -3px) rotate(1deg); }
+}
+
+.animate-combat-shake {
+  animation: screenShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes lightningFlash {
+  0%, 100% { opacity: 0; }
+  10%, 25% { opacity: 0.95; }
+  15%, 35% { opacity: 0.2; }
+  40% { opacity: 0.8; }
+  45% { opacity: 0; }
+}
+
+.lightning-fx {
+  animation: lightningFlash 3.5s infinite ease-in-out;
+}
+
+@keyframes rainFall {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 20% 100%; }
+}
+
+.rain-overlay {
+  background-image: 
+    linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.25)),
+    radial-gradient(2px 80px at 20px 20px, rgba(147, 197, 253, 0.7), transparent),
+    radial-gradient(2px 60px at 60px 80px, rgba(191, 219, 254, 0.6), transparent),
+    radial-gradient(2px 70px at 120px 40px, rgba(147, 197, 253, 0.8), transparent);
+  background-size: 100% 100%, 140px 140px, 160px 160px, 180px 180px;
+  animation: rainFall 0.4s linear infinite;
+}
+
+@keyframes shipBobbing {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(1.5deg); }
+}
+
+.ship-floating {
+  animation: shipBobbing 3s ease-in-out infinite;
+}
+

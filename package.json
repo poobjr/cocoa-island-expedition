@@ -1,0 +1,19 @@
+{
+  "name": "cocoa-island-expedition",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev": "npm run dev:server",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build": "npm run build:client && npm run build:server",
+    "start": "npm --prefix server run start",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  }
+}

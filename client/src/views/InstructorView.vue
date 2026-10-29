@@ -52,10 +52,75 @@ function handleResetGame() {
     store.instructorResetGame();
   }
 }
+
+// Instructor Security PIN Gate
+const isUnlocked = ref(sessionStorage.getItem('instructor_auth') === 'true');
+const inputPin = ref('');
+const pinError = ref(false);
+
+function unlockInstructor() {
+  if (inputPin.value.trim() === '8888') {
+    isUnlocked.value = true;
+    sessionStorage.setItem('instructor_auth', 'true');
+    pinError.value = false;
+  } else {
+    pinError.value = true;
+  }
+}
+
+function lockInstructor() {
+  isUnlocked.value = false;
+  sessionStorage.removeItem('instructor_auth');
+}
+
+function openProjectorWindow() {
+  window.open(`${window.location.origin}/#projector`, '_blank');
+}
+
+function openParticipantWindow() {
+  window.open(`${window.location.origin}/#participant`, '_blank');
+}
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+  <!-- 1. Lock Screen if not authorized -->
+  <div v-if="!isUnlocked" class="max-w-md mx-auto my-auto min-h-[80vh] flex flex-col justify-center p-4 select-none">
+    <div class="p-6 parchment-card rounded-3xl border border-amber-600/50 shadow-2xl space-y-5 text-center">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-950/80 border border-amber-500/40 flex items-center justify-center text-3xl shadow-lg">
+        🔒
+      </div>
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold font-serif text-amber-300">แผงควบคุมวิทยากร</h2>
+        <p class="text-xs text-slate-400">กรุณากรอกรหัสผ่านผู้สอน (Master GM PIN)</p>
+      </div>
+      <form @submit.prevent="unlockInstructor" class="space-y-3">
+        <input
+          v-model="inputPin"
+          type="password"
+          placeholder="รหัส PIN (ค่าเริ่มต้น: 8888)"
+          class="w-full text-center tracking-widest text-lg font-mono p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:border-amber-500"
+          autofocus
+        />
+        <p v-if="pinError" class="text-xs text-rose-400 font-semibold animate-pulse">
+          ❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
+        </p>
+        <button
+          type="submit"
+          class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black rounded-xl shadow-lg active:scale-95 transition-transform"
+        >
+          ปลดล็อกแผงควบคุม ⚓
+        </button>
+      </form>
+      <div class="pt-2 border-t border-slate-800">
+        <a href="/#participant" class="text-xs text-slate-400 hover:text-amber-300 transition-colors">
+          ← สลับไปยังหน้าจอมือถือผู้เล่น (Participant)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Full Instructor Master Dashboard (Unlocked) -->
+  <div v-else class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
     <!-- Header -->
     <div class="p-4 bg-slate-900/90 border border-amber-600/50 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-xl">
       <div class="flex items-center gap-3">
@@ -66,8 +131,36 @@ function handleResetGame() {
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <div class="text-right">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Separate Screen Windows Launcher -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="openProjectorWindow"
+            class="px-3 py-1.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/50 text-purple-200 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow transition-transform active:scale-95"
+            title="เปิดหน้าจอโปรเจกเตอร์แยกอีกหน้าต่างเพื่อต่อเข้าจอใหญ่"
+          >
+            <span>📽️ เปิดจอโปรเจกเตอร์ (แท็บใหม่)</span>
+          </button>
+          <button
+            type="button"
+            @click="openParticipantWindow"
+            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow transition-transform active:scale-95"
+            title="ดูตัวอย่างหน้าจอมือถือของผู้เข้าร่วม"
+          >
+            <span>📱 หน้าผู้เล่น (แท็บใหม่)</span>
+          </button>
+          <button
+            type="button"
+            @click="lockInstructor"
+            class="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 text-xs font-bold rounded-lg transition-colors"
+            title="ล็อกแผงควบคุมเพื่อความปลอดภัย"
+          >
+            🔒 ล็อก
+          </button>
+        </div>
+
+        <div class="text-right pl-3 border-l border-slate-800 hidden sm:block">
           <div class="text-xs text-slate-400">สถานะรอบ / วันที่:</div>
           <div class="text-sm font-bold font-mono text-amber-300">Day {{ store.currentDay }}/{{ store.maxDays }} ({{ store.phase }})</div>
         </div>

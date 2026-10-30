@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useGameStore, MapNode } from '../stores/gameStore';
 import CountdownClock from '../components/common/CountdownClock.vue';
 import SeaChart12Nodes from '../components/map/SeaChart12Nodes.vue';
@@ -14,10 +14,49 @@ import EventModal, { EventModalData } from '../components/common/EventModal.vue'
 
 const store = useGameStore();
 
+// All Ship Roles Definition
+const allRoleOptions = [
+  { value: 'CAPTAIN', label: '👑 กัปตันเรือ (Captain) - ฟันธงคำสั่งเดินเรือ', colorClass: 'text-amber-300' },
+  { value: 'NAVIGATOR', label: '⚓ ต้นหน (Navigator) - วางแผนทิศทาง/เชื้อเพลิง', colorClass: 'text-blue-300' },
+  { value: 'QUARTERMASTER', label: '💰 ฝ่ายเสบียง (Quartermaster) - คุมน้ำหนัก/ซื้อขาย', colorClass: 'text-emerald-300' },
+  { value: 'GEOGRAPHER', label: '🧭 นักภูมิศาสตร์ (Geographer) - พยากรณ์อากาศล่วงหน้า', colorClass: 'text-teal-300' },
+  { value: 'GUNNER', label: '⚔️ สรั่งเรือ (Gunner) - ปืนใหญ่/การป้องกันตัว', colorClass: 'text-red-300' },
+  { value: 'SPY', label: '🕵️ สายลับ (Spy) - สืบข่าวกรอง/ปล่อยข่าวลือลวง', colorClass: 'text-purple-300' },
+  { value: 'DECKHAND', label: '👥 ลูกเรือทั่วไป (Deckhand) - ดูสถานะสด/โหวตชี้แนะ', colorClass: 'text-sky-300' }
+];
+
 // Lobby Form
 const playerName = ref('');
 const selectedTeamId = ref('team-1');
 const selectedRole = ref('CAPTAIN');
+
+// 1. Calculate taken roles for the team currently chosen in the Lobby
+const takenRolesInSelectedTeam = computed(() => {
+  const team = store.teams.find(t => t.id === selectedTeamId.value);
+  const set = new Set<string>();
+  if (team?.members) {
+    team.members.forEach(m => {
+      // Exclude DECKHAND so DECKHAND is never considered taken
+      if (m.role !== 'DECKHAND') {
+        set.add(m.role);
+      }
+    });
+  }
+  return set;
+});
+
+// Roles available for the selected team in the Lobby
+const availableRolesInLobby = computed(() => {
+  return allRoleOptions.filter(r => r.value === 'DECKHAND' || !takenRolesInSelectedTeam.value.has(r.value));
+});
+
+// Auto-switch selectedRole if the currently chosen role is already taken on that ship
+watch([selectedTeamId, availableRolesInLobby], () => {
+  const isAvailable = availableRolesInLobby.value.some(r => r.value === selectedRole.value);
+  if (!isAvailable) {
+    selectedRole.value = availableRolesInLobby.value[0]?.value || 'DECKHAND';
+  }
+}, { immediate: true });
 
 const activeTab = ref<'ROLE_PANEL' | 'MAP' | 'LOGS'>('ROLE_PANEL');
 const selectedMapNode = ref<MapNode | null>(null);
@@ -219,6 +258,24 @@ const roleNameTh = computed(() => {
     default: return 'ลูกเรือทั่วไป';
   }
 });
+
+// Roles available in Active Dashboard for myTeam
+const takenRolesInMyTeam = computed(() => {
+  const set = new Set<string>();
+  if (myTeam.value?.members) {
+    myTeam.value.members.forEach(m => {
+      // Don't mark my own current role as taken by someone else
+      if (m.id !== store.currentPlayer?.id && m.name !== store.currentPlayer?.name && m.role !== 'DECKHAND') {
+        set.add(m.role);
+      }
+    });
+  }
+  return set;
+});
+
+const availableSwitchRoles = computed(() => {
+  return allRoleOptions.filter(r => r.value === 'DECKHAND' || !takenRolesInMyTeam.value.has(r.value));
+});
 </script>
 
 <template>
@@ -258,18 +315,20 @@ const roleNameTh = computed(() => {
           <label class="text-xs text-slate-300 font-medium">เลือกบทบาทหน้าที่ในเรือ (Select Role):</label>
           <select
             v-model="selectedRole"
-            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-500"
+            class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-500 font-medium"
           >
-            <option value="CAPTAIN">👑 กัปตันเรือ (Captain) - ฟันธงคำสั่งเดินเรือ</option>
-            <option value="NAVIGATOR">⚓ ต้นหน (Navigator) - วางแผนทิศทาง/เชื้อเพลิง</option>
-            <option value="QUARTERMASTER">💰 ฝ่ายเสบียง (Quartermaster) - คุมน้ำหนัก/ซื้อขาย</option>
-            <option value="GEOGRAPHER">🧭 นักภูมิศาสตร์ (Geographer) - พยากรณ์อากาศล่วงหน้า</option>
-            <option value="GUNNER">⚔️ สรั่งเรือ (Gunner) - ปืนใหญ่/การป้องกันตัว</option>
-            <option value="SPY">🕵️ สายลับ (Spy) - สืบข่าวกรอง/ปล่อยข่าวลือลวง</option>
-            <option value="DECKHAND">👥 ลูกเรือทั่วไป (Deckhand) - ดูสถานะสด/โหวตชี้แนะ</option>
+            <option 
+              v-for="role in availableRolesInLobby" 
+              :key="role.value" 
+              :value="role.value"
+              class="bg-slate-900"
+              :class="role.colorClass"
+            >
+              {{ role.label }}
+            </option>
           </select>
           <p class="text-[11px] text-slate-400 mt-1">
-            * สมาชิกคนที่ 7, 8 หรือมากกว่านั้นในกลุ่ม ให้เลือก <span class="text-sky-300 font-semibold">ลูกเรือทั่วไป</span>
+            * ตำแหน่งหลักจำกัด 1 คนต่อลำ (เมื่อมีคนเลือกแล้วจะหายไป) — สามารถเลือก <span class="text-sky-300 font-semibold">ลูกเรือทั่วไป</span> ได้เสมอไม่จำกัดจำนวน
           </p>
         </div>
 
@@ -297,13 +356,15 @@ const roleNameTh = computed(() => {
               class="text-[10px] px-1.5 py-0.5 rounded border inline-block cursor-pointer outline-none font-bold"
               :class="roleBadgeColor"
             >
-              <option value="CAPTAIN" class="bg-slate-900 text-amber-300">👑 กัปตันเรือ (Captain)</option>
-              <option value="NAVIGATOR" class="bg-slate-900 text-blue-300">⚓ ต้นหน (Navigator)</option>
-              <option value="QUARTERMASTER" class="bg-slate-900 text-emerald-300">💰 ฝ่ายเสบียง (Quartermaster)</option>
-              <option value="GEOGRAPHER" class="bg-slate-900 text-teal-300">🧭 นักภูมิศาสตร์ (Geographer)</option>
-              <option value="GUNNER" class="bg-slate-900 text-red-300">⚔️ สรั่งเรือ/ปืนใหญ่ (Gunner)</option>
-              <option value="SPY" class="bg-slate-900 text-purple-300">🕵️ สายลับ (Spy)</option>
-              <option value="DECKHAND" class="bg-slate-900 text-sky-300">👥 ลูกเรือทั่วไป (Deckhand)</option>
+              <option 
+                v-for="role in availableSwitchRoles" 
+                :key="role.value" 
+                :value="role.value"
+                class="bg-slate-900"
+                :class="role.colorClass"
+              >
+                {{ role.label }}
+              </option>
             </select>
           </div>
         </div>

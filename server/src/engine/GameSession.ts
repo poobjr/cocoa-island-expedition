@@ -90,24 +90,39 @@ export class GameSession {
 
   // --- Player Management ---
   public registerPlayer(name: string, teamId: string, role: ShipRole, socketId: string): Player {
+    // 1. Remove player from all teams first if already registered (prevent duplicates on role/team switch)
+    this.teams.forEach(t => {
+      t.members = t.members.filter(m => m.socketId !== socketId && m.name !== name);
+    });
+
+    const team = this.teams.get(teamId);
+    let assignedRole = role;
+
+    if (team) {
+      // 2. If role is unique and already occupied by someone else, fallback to DECKHAND
+      if (assignedRole !== ShipRole.DECKHAND) {
+        const isOccupied = team.members.some(m => m.role === assignedRole && m.socketId !== socketId && m.name !== name);
+        if (isOccupied) {
+          assignedRole = ShipRole.DECKHAND;
+        }
+      }
+    }
+
     const player: Player = {
       id: uuidv4(),
       name,
       teamId,
-      role,
+      role: assignedRole,
       isOnline: true,
       socketId
     };
 
     this.players.set(player.id, player);
-    const team = this.teams.get(teamId);
+
     if (team) {
-      // If role is unique and already taken (except DECKHAND), demote previous or swap
-      if (role !== ShipRole.DECKHAND) {
-        team.members = team.members.filter(m => m.role !== role);
-      }
       team.members.push(player);
     }
+
     return player;
   }
 
